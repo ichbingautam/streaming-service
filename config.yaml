@@ -1,0 +1,63 @@
+app:
+  name: streaming-service
+  version: 1.0.0
+  environment: development
+
+server:
+  port: 8080
+  readtimeout: 30s
+  writetimeout: 30s
+  idletimeout: 60s
+
+aws:
+  region: us-east-1
+  s3rawbucket: streaming-raw-media
+  s3processedbucket: streaming-processed-media
+  dynamodbtable: video-metadata
+  cloudfrontdomain: ""
+  # accesskeyid: ""       # Use environment variables
+  # secretaccesskey: ""   # Use environment variables
+
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  # password: ""          # Use environment variables
+
+ffmpeg:
+  binarypath: ffmpeg
+  tempdir: /tmp/streaming
+  segmentduration: 6
+  profiles:
+    - name: "1080p"
+      width: 1920
+      height: 1080
+      videobitrate: "5000k"
+      audiobitrate: "192k"
+      codec: "h264"
+    - name: "720p"
+      width: 1280
+      height: 720
+      videobitrate: "2500k"
+      audiobitrate: "128k"
+      codec: "h264"
+    - name: "480p"
+      width: 854
+      height: 480
+      videobitrate: "1000k"
+      audiobitrate: "96k"
+      codec: "h264"
+    - name: "360p"
+      width: 640
+      height: 360
+      videobitrate: "500k"
+      audiobitrate: "64k"
+      codec: "h264"
+
+worker:
+  concurrency: 4
+  jobtimeout: 30m
+
+log:
+  level: info
+  format: json
