@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.api
+    ports:
+      - "8080:8080"
+    environment:
+      - STREAM_AWS_REGION=us-east-1
+      - STREAM_AWS_ACCESSKEYID=${AWS_ACCESS_KEY_ID}
+      - STREAM_AWS_SECRETACCESSKEY=${AWS_SECRET_ACCESS_KEY}
+      - STREAM_REDIS_HOST=redis
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.worker
+    environment:
+      - STREAM_AWS_REGION=us-east-1
+      - STREAM_AWS_ACCESSKEYID=${AWS_ACCESS_KEY_ID}
+      - STREAM_AWS_SECRETACCESSKEY=${AWS_SECRET_ACCESS_KEY}
+      - STREAM_REDIS_HOST=redis
+      - STREAM_WORKER_CONCURRENCY=2
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # LocalStack for local AWS development
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,dynamodb
+      - DEFAULT_REGION=us-east-1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  localstack_data:

@@ -1,0 +1,40 @@
+# Build stage
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /app
+
+# Install dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source
+COPY . .
+
+# Build
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /worker ./cmd/worker
+
+# Runtime stage
+FROM alpine:3.19
+
+WORKDIR /app
+
+# Install ffmpeg and runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata ffmpeg
+
+# Copy binary
+COPY --from=builder /worker /app/worker
+COPY config.yaml /app/config.yaml
+
+# Create non-root user
+RUN addgroup -g 1001 -S appgroup && \
+  adduser -u 1001 -S appuser -G appgroup
+
+# Create temp directory for processing
+RUN mkdir -p /tmp/streaming && chown appuser:appgroup /tmp/streaming
+
+USER appuser
+
+ENTRYPOINT ["/app/worker"]
