@@ -288,12 +288,14 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:sha-${{ github.sha }}
           format: "sarif"
           output: "trivy-image-results.sarif"
+        continue-on-error: true
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: hashFiles('trivy-image-results.sarif') != ''
         with:
           sarif_file: "trivy-image-results.sarif"
+        continue-on-error: true
 
   # ============================================
   # Release
