@@ -23,7 +23,6 @@ linters:
     - bodyclose
     - durationcheck
     - gofmt
-    - goimports
     - misspell
 
   disable:
