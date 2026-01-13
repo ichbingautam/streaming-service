@@ -1,0 +1,161 @@
+# https://golangci-lint.run/usage/configuration/
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - vendor
+    - bin
+    - deployments
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    # Default linters
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # Additional linters
+    - bodyclose # Check whether HTTP response body is closed
+    - contextcheck # Check function using context
+    - dupl # Code clone detection
+    - durationcheck # Check for two durations multiplied together
+    - errname # Check that sentinel errors are prefixed with Err
+    - errorlint # Find code that can cause problems with error wrapping
+    - exhaustive # Check exhaustiveness of enum switch statements
+    - exportloopref # Check for pointers to enclosing loop variables
+    - forbidigo # Forbid identifiers
+    - gocognit # Cognitive complexity
+    - goconst # Find repeated strings that could be constants
+    - gocritic # Provides diagnostics that check for bugs
+    - gocyclo # Cyclomatic complexity
+    - godot # Check if comments end in a period
+    - gofmt # Check whether code was gofmt-ed
+    - goimports # Check import statements are formatted
+    - goprintffuncname # Check that printf-like functions are named with f
+    - gosec # Security problems
+    - misspell # Find commonly misspelled English words
+    - nakedret # Find naked returns in functions
+    - nilerr # Find incorrect return of nil error
+    - nilnil # Check for nil returned along with no error
+    - noctx # Find sending HTTP request without context
+    - nolintlint # Reports ill-formed or insufficient nolint directives
+    - prealloc # Find slice declarations that could be preallocated
+    - predeclared # Find shadowing of predeclared identifiers
+    - revive # Fast, configurable, extensible linter
+    - rowserrcheck # Check whether Err of rows is checked
+    - sqlclosecheck # Check that sql.Rows and sql.Stmt are closed
+    - stylecheck # Stylecheck is a replacement for golint
+    - tparallel # Detects inappropriate use of t.Parallel()
+    - unconvert # Remove unnecessary type conversions
+    - unparam # Reports unused function parameters
+    - wastedassign # Find wasted assignment statements
+    - whitespace # Detection of leading and trailing whitespace
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  gocognit:
+    min-complexity: 20
+
+  gocyclo:
+    min-complexity: 15
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - whyNoLint
+      - hugeParam
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/streaming-service
+
+  gosec:
+    excludes:
+      - G104 # Audit errors not checked
+      - G304 # File path provided as taint input
+
+  nakedret:
+    max-func-lines: 30
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  stylecheck:
+    checks:
+      - all
+      - -ST1000 # Package comments
+      - -ST1003 # MixedCaps
+
+  unparam:
+    check-exported: false
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - dupl
+        - gocognit
+        - gocyclo
+        - gosec
+        - unparam
+
+    # Exclude known issues in generated code
+    - path: mock_.*\.go
+      linters:
+        - all
+
+    # Allow larger cognitive complexity in service files
+    - path: internal/service/
+      linters:
+        - gocognit
+      text: "cognitive complexity"
+
+  max-issues-per-linter: 50
+  max-same-issues: 10
