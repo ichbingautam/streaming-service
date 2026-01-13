@@ -115,17 +115,25 @@ func (s *Service) ExtractAudio(ctx context.Context, mediaID string) error {
 		playlistPath := filepath.Join(renditionDir, "playlist.m3u8")
 		if file, err := os.Open(playlistPath); err == nil {
 			key := fmt.Sprintf("%s/audio/%s/playlist.m3u8", mediaID, r.Name)
-			s.s3Client.Upload(ctx, bucket, key, file, "application/x-mpegURL")
+			if uploadErr := s.s3Client.Upload(ctx, bucket, key, file, "application/x-mpegURL"); uploadErr != nil {
+				s.log.Error("failed to upload playlist", "error", uploadErr, "key", key)
+			}
 			file.Close()
 		}
 
 		// Upload segments
-		segments, _ := filepath.Glob(filepath.Join(renditionDir, "segment_*.aac"))
+		segments, err := filepath.Glob(filepath.Join(renditionDir, "segment_*.aac"))
+		if err != nil {
+			s.log.Error("failed to glob segments", "error", err)
+			continue
+		}
 		for _, seg := range segments {
 			if file, err := os.Open(seg); err == nil {
 				segName := filepath.Base(seg)
 				key := fmt.Sprintf("%s/audio/%s/%s", mediaID, r.Name, segName)
-				s.s3Client.Upload(ctx, bucket, key, file, "audio/aac")
+				if uploadErr := s.s3Client.Upload(ctx, bucket, key, file, "audio/aac"); uploadErr != nil {
+					s.log.Error("failed to upload segment", "error", uploadErr, "key", key)
+				}
 				file.Close()
 			}
 		}
