@@ -1,0 +1,108 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Every Monday at 6 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-go:
+    name: Update Go Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Update dependencies
+        run: |
+          go get -u ./...
+          go mod tidy
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet go.mod go.sum; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run tests
+        if: steps.changes.outputs.changed == 'true'
+        run: go test -v ./...
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): update Go dependencies"
+          title: "⬆️ Update Go dependencies"
+          body: |
+            ## Automated Dependency Update
+
+            This PR updates Go dependencies to their latest versions.
+
+            ### Changes
+            ```diff
+            ${{ steps.changes.outputs.diff }}
+            ```
+
+            ### Checklist
+            - [ ] All tests pass
+            - [ ] No breaking changes
+            - [ ] Review security advisories for updated packages
+          branch: deps/go-update
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+
+  update-actions:
+    name: Update GitHub Actions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update actions
+        uses: renovatebot/github-action@v40.1.0
+        with:
+          configurationFile: .github/renovate.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: Check for security advisories
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          exit-code: "0"
+          vuln-type: "library"
+          severity: "HIGH,CRITICAL"

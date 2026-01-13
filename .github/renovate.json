@@ -1,0 +1,55 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":preserveSemverRanges",
+    "group:allNonMajor"
+  ],
+  "labels": ["dependencies", "automated"],
+  "schedule": ["before 6am on monday"],
+  "timezone": "UTC",
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchPackagePatterns": ["github.com/aws/*"],
+      "groupName": "AWS SDK",
+      "automerge": true
+    },
+    {
+      "matchPackagePatterns": ["^go.uber.org/"],
+      "groupName": "Uber packages"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "automerge": true
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "groupName": "Docker images"
+    },
+    {
+      "matchPackageNames": ["golang"],
+      "matchManagers": ["dockerfile", "gomod"],
+      "groupName": "Go version"
+    }
+  ],
+  "gomod": {
+    "enabled": true
+  },
+  "dockerfile": {
+    "enabled": true
+  },
+  "github-actions": {
+    "enabled": true
+  }
+}
