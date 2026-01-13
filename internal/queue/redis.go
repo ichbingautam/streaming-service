@@ -3,15 +3,20 @@ package queue
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
 	"github.com/streaming-service/internal/config"
 )
 
-// JobType represents the type of processing job
+// JobType represents the type of processing job.
 type JobType string
+
+// ErrNoJobAvailable is returned when no jobs are available in the queue.
+var ErrNoJobAvailable = errors.New("no job available")
 
 const (
 	JobTypeTranscode JobType = "transcode"
@@ -101,13 +106,16 @@ func (q *RedisQueue) Dequeue(ctx context.Context, timeout time.Duration) (*Job, 
 	// Use BZPOPMIN for blocking pop from sorted set
 	result, err := q.client.BZPopMin(ctx, timeout, q.queueKey).Result()
 	if err != nil {
-		if err == redis.Nil {
-			return nil, nil // No job available
+		if errors.Is(err, redis.Nil) {
+			return nil, ErrNoJobAvailable
 		}
 		return nil, fmt.Errorf("failed to dequeue job: %w", err)
 	}
 
-	data := result.Member.(string)
+	data, ok := result.Member.(string)
+	if !ok {
+		return nil, fmt.Errorf("unexpected member type: %T", result.Member)
+	}
 
 	var job Job
 	if err := json.Unmarshal([]byte(data), &job); err != nil {
@@ -116,8 +124,10 @@ func (q *RedisQueue) Dequeue(ctx context.Context, timeout time.Duration) (*Job, 
 
 	// Move to processing set
 	if err := q.client.SAdd(ctx, q.processingKey, data).Err(); err != nil {
-		// Re-enqueue if we can't track processing
-		_ = q.Enqueue(ctx, &job)
+		// Re-enqueue if we can't track processing - log but don't fail
+		if enqErr := q.Enqueue(ctx, &job); enqErr != nil {
+			return nil, fmt.Errorf("failed to re-enqueue job: %w", enqErr)
+		}
 		return nil, fmt.Errorf("failed to track processing job: %w", err)
 	}
 

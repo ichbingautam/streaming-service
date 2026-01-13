@@ -2,7 +2,7 @@ package domain
 
 import "errors"
 
-// Common domain errors
+// Common domain errors.
 var (
 	ErrMediaNotFound      = errors.New("media not found")
 	ErrMediaAlreadyExists = errors.New("media already exists")
