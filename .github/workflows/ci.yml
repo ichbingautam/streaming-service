@@ -392,16 +392,17 @@ jobs:
           API_URL=$(kubectl get svc streaming-api -n streaming -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
           curl -f "http://${API_URL}/health" || exit 1
 
-      - name: Notify deployment
-        if: always()
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "Staging deployment ${{ job.status }}: ${{ github.repository }}@${{ github.sha }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      # Slack notifications disabled - uncomment when SLACK_WEBHOOK_URL secret is configured
+      # - name: Notify deployment
+      #   if: always()
+      #   uses: slackapi/slack-github-action@v1
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "Staging deployment ${{ job.status }}: ${{ github.repository }}@${{ github.sha }}"
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # ============================================
   # Deploy to Production
@@ -457,16 +458,17 @@ jobs:
           # Ready check
           curl -f "http://${API_URL}/ready" || exit 1
 
-      - name: Notify production deployment
-        if: always()
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "🚀 Production deployment ${{ job.status }}: ${{ github.repository }}@${{ github.ref_name }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      # Slack notifications disabled - uncomment when SLACK_WEBHOOK_URL secret is configured
+      # - name: Notify production deployment
+      #   if: always()
+      #   uses: slackapi/slack-github-action@v1
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "🚀 Production deployment ${{ job.status }}: ${{ github.repository }}@${{ github.ref_name }}"
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # ============================================
   # Cleanup
